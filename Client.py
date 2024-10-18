@@ -49,7 +49,7 @@ class Client():
 
     def build_model(self, embedding_dim, item_embedding, knowledge_graph, args):
         model = SFedRec(item_embedding, embedding_dim, knowledge_graph, args.num_items, num_layers=2)
-        return model    #构建本地模型
+        return model
 
     def build_extra_input(self, user_id):
         num_neighbors = len(self.neighbors)
@@ -58,7 +58,7 @@ class Client():
         Seqs = []
         for idx in range(len(self.set)):
             samples = self.set[idx]
-            rating = samples[-1]   # 获取样本中的最后一个元素，即评分
+            rating = samples[-1]
             seqs = samples[-2]
             Seqs.append(seqs)
             Labels.append(rating)
@@ -80,12 +80,12 @@ class Client():
         del new_labels_id, Seqs, unique_values
         graphs_inputs, used_nodes = extra_inputs
         del extra_inputs
-        iidds = used_nodes['item']  #item nodes in extra_inputs
+        iidds = used_nodes['item']
 
         unique = []
         for item in iidds:
             if item not in unique:
-                unique.append(item)  # 独一的item
+                unique.append(item)
         self.mapped_values = [reverse_mapping[tensor.item()] for tensor in unique]
         del reverse_mapping
         uidds = used_nodes['user']  #user nodes in extra_inputs
@@ -112,15 +112,12 @@ class Client():
         optimizer = optim.AdamW(params, lr, weight_decay=0)
         self.model.train()
         logit = []
-        # 假设 graphs 是一个包含 X 行图的列表
         for seq in Seqs:
-            # 获取当前序列的新项目
             graph = seq_to_weighted_graph(seq)
             new_seq_id = [reverse_mapping[id_] for id_ in seq]
 
             logits = self.model(graph, new_seq_id, extra_inputs, feats)
             logit.append(logits)
-            # 遍历当前图中的节点数据，并将其转换为整数类型的张量
 
         logits_tensor = torch.stack(logit)
         if logits_tensor.shape[0] == 1 and logits_tensor.shape[1] == 1:
@@ -134,15 +131,12 @@ class Client():
         del flattened_tensor, logits_tensor, logit, graph, logits
         gc.collect()
         optimizer.step()
-        # 保存模型
         model_save_path = f"{model_save_dir}/model_client_{user_id}.pth"
         torch.save(self.model.state_dict(), model_save_path)
-        # print(f"Model saved at {model_save_path}")
         del model_save_path
         gc.collect()
         model_grad = []
         num = 0
-        #w = self.model.state_dict()
         for param in list(self.model.parameters()):
             if param.grad == None:
                 continue
@@ -168,7 +162,7 @@ class Client():
 
     def update_local(self, new_param):
         paradata = list(self.model.parameters())
-        with torch.no_grad():  # 确保不会跟踪梯度操作
+        with torch.no_grad():
             for i in range(len(new_param)):
                 if i != 0:
                     continue
@@ -194,7 +188,7 @@ class Client():
         for idx in range(len(set_test)):
             samples = set_test[idx]
             test_id = samples[0]
-            rating_test = samples[-1]  # 获取样本中的最后一个元素，即评分
+            rating_test = samples[-1]
             seqs_test = samples[-2]
             test_ids.append(test_id)
             Seqs_test.append(seqs_test)
@@ -222,14 +216,12 @@ class Client():
         }
 
         for seq_test in Seqs_test:
-            # 获取当前序列的新项目
             graph_test = seq_to_weighted_graph(seq_test)
             graphs_test.append(graph_test)
         test_data = list(zip(test_ids, Seqs_test, graphs_test))
         logit_test = []
 
         for test_user_id, Seqstest, graphtest in test_data:
-            # 加载对应客户端的模型
             model_save_path = f"{model_save_dir}/model_client_{test_user_id}.pth"
             state_dict = torch.load(model_save_path)
             self.model.load_state_dict(state_dict)
