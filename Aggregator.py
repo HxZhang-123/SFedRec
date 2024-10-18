@@ -18,7 +18,7 @@ def aggregator(aggregate_list):
                 gradient_model.append(model_grad[i] * num)
         else:
             if len(model_grad) != len(gradient_model):
-                continue  # 跳过该梯度，因为长度不一致
+                continue
             for i in range(len(model_grad)):
                 gradient_model[i] += model_grad[i] * num
     loss = torch.sqrt(loss / number)
