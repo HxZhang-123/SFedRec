@@ -2,14 +2,10 @@ def parameter_clip(parameter_list):
     clipped_para = []
     none_positions = []
     grad_list = []
-    # 遍历parameter_list，修改每个元组中的列表，并添加到新列表中
     for single_param in parameter_list:
-        # 假设item是一个元组，且它的第二个元素是一个列表
         none_position = [i for i, val in enumerate(single_param[0]) if val is None]
         modified_list = [x for x in single_param[0] if x is not None]
-        # 创建一个新的元组，其中包含原始元组的第一个元素和修改后的列表
         modified_tuple = (modified_list, single_param[1], single_param[2])
-        # 将新元组添加到新列表中
         clipped_para.append(modified_tuple)
         none_positions.append(none_position)
         grad_list.append(modified_list)
